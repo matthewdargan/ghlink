@@ -7,13 +7,17 @@
 //
 // Usage:
 //
-//	ghlink file [line1] [line2]
+//	ghlink [-l1 line1 [-l2 line2] | -s text] file
 //
 // “ghlink file” prints a link to file.
 //
-// “ghlink file line1” prints a link to line1 in file.
+// “ghlink -l1 line1 file” prints a link to line1 in file.
 //
-// “ghlink file line1 line2” prints a link to lines line1 through line2 in file.
+// “ghlink -l1 line1 -l2 line2 file” prints a link to lines line1 through
+// line2 in file.
+//
+// “ghlink -s text file” prints a link to lines matching text in file. If
+// text is ‘-’, the standard input is used.
 //
 // The “git” program must be on the system's PATH environment variable.
 //
@@ -25,26 +29,37 @@
 //
 // Print a link to line 3 in README.md:
 //
-//	$ ghlink README.md 3
+//	$ ghlink -l1 3 README.md
 //
 // Print a link to lines 3 through 8 in README.md:
 //
-//	$ ghlink README.md 3 8
+//	$ ghlink -l1 3 -l2 8 README.md
+//
+// Print a link to lines matching "Usage:\n\n    ghlink file":
+//
+//	$ ghlink -s 'Usage:\n\n    ghlink file' README.md
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
+var (
+	line1  = flag.Int("l1", -1, "print link to start line number")
+	line2  = flag.Int("l2", -1, "print link to end line number")
+	search = flag.String("s", "", "print link to matching text")
+)
+
 func usage() {
-	fmt.Fprintf(os.Stderr, "usage: ghlink file [line1] [line2]\n")
+	fmt.Fprintf(os.Stderr, "usage: ghlink [-l1 line1 [-l2 line2] | -s text] file\n")
 	os.Exit(2)
 }
 
@@ -53,18 +68,16 @@ func main() {
 	log.SetFlags(0)
 	flag.Usage = usage
 	flag.Parse()
-	if flag.NArg() < 1 || flag.NArg() > 3 {
+	if flag.NArg() != 1 {
 		usage()
 	}
-	args := flag.Args()
-	f := args[0]
-	var l1, l2 string
-	if flag.NArg() > 1 {
-		l1 = args[1]
+	if *line1 == -1 && *line2 != -1 {
+		usage()
 	}
-	if flag.NArg() > 2 {
-		l2 = args[2]
+	if *search != "" && (*line1 != -1 || *line2 != -1) {
+		usage()
 	}
+	f := flag.Arg(0)
 	r, err := repo(f)
 	if err != nil {
 		log.Fatalf("cannot get repo: %v", err)
@@ -78,19 +91,28 @@ func main() {
 		log.Fatalf("cannot get relative path: %v", err)
 	}
 	url := fmt.Sprintf("https://github.com/%s/blob/%s/%s", r, c, p)
-	if l1 != "" {
-		n, err := strconv.Atoi(l1)
-		if err != nil {
-			log.Fatalf("invalid line %q", l1)
-		}
-		url += fmt.Sprintf("#L%d", n)
+	if *line1 != -1 {
+		url += fmt.Sprintf("#L%d", *line1)
 	}
-	if l2 != "" {
-		n, err := strconv.Atoi(l2)
+	if *line2 != -1 {
+		url += fmt.Sprintf("-L%d", *line2)
+	}
+	if *search == "-" {
+		s, err := io.ReadAll(os.Stdin)
 		if err != nil {
-			log.Fatalf("invalid line %q", l2)
+			log.Fatal(err)
 		}
-		url += fmt.Sprintf("-L%d", n)
+		*search = string(s)
+	}
+	if *search != "" {
+		l, err := searchLines(f, *search)
+		if err != nil {
+			log.Fatalf("cannot search lines: %v", err)
+		}
+		url += fmt.Sprintf("#L%d", l[0])
+		if len(l) > 1 {
+			url += fmt.Sprintf("-L%d", l[len(l)-1])
+		}
 	}
 	fmt.Println(url)
 }
@@ -132,4 +154,31 @@ func relPath(f string) (string, error) {
 		return "", err
 	}
 	return filepath.Join(strings.TrimSpace(string(o)), filepath.Base(f)), nil
+}
+
+func searchLines(f, t string) ([]int, error) {
+	if t[len(t)-1] == '\n' {
+		t = t[:len(t)-1]
+	}
+	searchLines := strings.Split(t, "\n")
+	file, err := os.Open(f)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	s := bufio.NewScanner(file)
+	var lines []int
+	for i, l := 0, 1; s.Scan() && i < len(searchLines); l++ {
+		if strings.Contains(s.Text(), searchLines[i]) {
+			lines = append(lines, l)
+			i++
+		}
+	}
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
+	if len(lines) == 0 {
+		return nil, fmt.Errorf("file %q does not contain string %q", f, t)
+	}
+	return lines, nil
 }
