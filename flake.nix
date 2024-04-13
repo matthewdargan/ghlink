@@ -2,16 +2,45 @@
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
     parts.url = "github:hercules-ci/flake-parts";
+    pre-commit-hooks = {
+      inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:cachix/pre-commit-hooks.nix";
+    };
   };
   outputs = inputs:
     inputs.parts.lib.mkFlake {inherit inputs;} {
-      perSystem = {pkgs, ...}: {
+      imports = [inputs.pre-commit-hooks.flakeModule];
+      perSystem = {
+        config,
+        pkgs,
+        ...
+      }: {
+        devShells.default = pkgs.mkShell {
+          packages = [pkgs.go];
+          shellHook = "${config.pre-commit.installationScript}";
+        };
         packages = {
           ghlink = pkgs.buildGoModule {
             pname = "ghlink";
             src = ./.;
             vendorHash = null;
             version = "0.2.0";
+          };
+        };
+        pre-commit = {
+          settings = {
+            hooks = {
+              golangci-lint = {
+                enable = true;
+                package = pkgs.writeShellApplication {
+                  name = "golangci-lint";
+                  runtimeInputs = [pkgs.go pkgs.golangci-lint];
+                  text = ''exec golangci-lint "$@"'';
+                };
+              };
+              gotest.enable = true;
+            };
+            src = ./.;
           };
         };
       };
