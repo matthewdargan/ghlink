@@ -1,5 +1,6 @@
 {
   inputs = {
+    nix-go.url = "github:matthewdargan/nix-go";
     nixpkgs.url = "nixpkgs/nixos-unstable";
     parts.url = "github:hercules-ci/flake-parts";
     pre-commit-hooks = {
@@ -16,7 +17,7 @@
         ...
       }: {
         devShells.default = pkgs.mkShell {
-          packages = [pkgs.go];
+          packages = [inputs.nix-go.packages.${pkgs.system}.go];
           shellHook = "${config.pre-commit.installationScript}";
         };
         packages = {
@@ -32,11 +33,7 @@
             hooks = {
               golangci-lint = {
                 enable = true;
-                package = pkgs.writeShellApplication {
-                  name = "golangci-lint";
-                  runtimeInputs = [pkgs.go pkgs.golangci-lint];
-                  text = ''exec golangci-lint "$@"'';
-                };
+                package = inputs.nix-go.packages.${pkgs.system}.golangci-lint;
               };
               gotest.enable = true;
             };
