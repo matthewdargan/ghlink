@@ -57,15 +57,17 @@
     },
     "nix-go": {
       "inputs": {
-        "nixpkgs": "nixpkgs",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
         "parts": "parts"
       },
       "locked": {
-        "lastModified": 1713066503,
-        "narHash": "sha256-OQk2B94OB+21GIbFeKosnBwBg8Z8fTbmdJu2bEOLC/M=",
+        "lastModified": 1713071761,
+        "narHash": "sha256-sOdEv4zIrWwBGFmkOt6MSoThgWkEQIL2no5Ycm+4SG8=",
         "owner": "matthewdargan",
         "repo": "nix-go",
-        "rev": "1f6b75385f7628ed91fb42b582c288e2eb65bbe9",
+        "rev": "378db0989b73eec2d8fcaeba9155d5da1d4ec67c",
         "type": "github"
       },
       "original": {
@@ -141,21 +143,6 @@
         "type": "github"
       }
     },
-    "nixpkgs_2": {
-      "locked": {
-        "lastModified": 1712791164,
-        "narHash": "sha256-3sbWO1mbpWsLepZGbWaMovSO7ndZeFqDSdX0hZ9nVyw=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "1042fd8b148a9105f3c0aca3a6177fd1d9360ba5",
-        "type": "github"
-      },
-      "original": {
-        "id": "nixpkgs",
-        "ref": "nixos-unstable",
-        "type": "indirect"
-      }
-    },
     "parts": {
       "inputs": {
         "nixpkgs-lib": "nixpkgs-lib"
@@ -219,7 +206,7 @@
     "root": {
       "inputs": {
         "nix-go": "nix-go",
-        "nixpkgs": "nixpkgs_2",
+        "nixpkgs": "nixpkgs",
         "parts": "parts_2",
         "pre-commit-hooks": "pre-commit-hooks"
       }
