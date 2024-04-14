@@ -13,19 +13,27 @@
       imports = [inputs.pre-commit-hooks.flakeModule];
       perSystem = {
         config,
+        inputs',
+        lib,
         pkgs,
         ...
       }: {
         devShells.default = pkgs.mkShell {
-          packages = [inputs.nix-go.packages.${pkgs.system}.go];
+          packages = [inputs'.nix-go.packages.go];
           shellHook = "${config.pre-commit.installationScript}";
         };
         packages = {
-          ghlink = pkgs.buildGoModule {
+          ghlink = inputs'.nix-go.legacyPackages.buildGoModule {
+            meta = with lib; {
+              description = "Create GitHub permanent links to specified file lines";
+              homepage = "https://github.com/matthewdargan/ghlink";
+              license = licenses.bsd3;
+              maintainers = with maintainers; [matthewdargan];
+            };
             pname = "ghlink";
             src = ./.;
             vendorHash = null;
-            version = "0.2.1";
+            version = "0.2.2";
           };
         };
         pre-commit = {
@@ -33,7 +41,7 @@
             hooks = {
               golangci-lint = {
                 enable = true;
-                package = inputs.nix-go.packages.${pkgs.system}.golangci-lint;
+                package = inputs'.nix-go.packages.golangci-lint;
               };
               gotest.enable = true;
             };
