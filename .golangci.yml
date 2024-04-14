@@ -1,5 +1,3 @@
-output:
-  sort-results: true
 linters:
   enable:
     - gofumpt
@@ -7,11 +5,16 @@ linters:
     - paralleltest
     - revive
 linters-settings:
+  errcheck:
+    exclude-functions:
+      - (*os.File).Close
   govet:
-    enable-all: true
     disable:
       - fieldalignment
+    enable-all: true
 issues:
   exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0
+output:
+  sort-results: true
