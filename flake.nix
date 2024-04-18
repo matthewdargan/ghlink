@@ -46,7 +46,10 @@
                 enable = true;
                 package = inputs'.nix-go.packages.golangci-lint;
               };
-              gotest.enable = true;
+              gotest = {
+                enable = true;
+                package = inputs'.nix-go.packages.go;
+              };
             };
             src = ./.;
           };
