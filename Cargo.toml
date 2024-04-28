@@ -1,0 +1,7 @@
+[package]
+name = "ghlink"
+version = "0.2.5"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.4", features = ["derive"] }
