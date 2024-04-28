@@ -1,4 +1,5 @@
 use clap::Parser;
+use std::error::Error;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -18,7 +19,7 @@ struct Args {
 
 const USAGE: &str = "usage: ghlink [-s start-line [-e end-line] | -t text] path";
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
     match (args.start_line, args.end_line, &args.text) {
         (None, None, None) => {}
@@ -27,7 +28,11 @@ fn main() {
         (None, None, Some(_)) => {}
         _ => eprintln!("{}", USAGE),
     }
-    println!("start_line: {:?}", args.start_line);
-    println!("end_line: {:?}", args.end_line);
-    println!("text: {:?}", args.text);
+    let repo = gix::open(args.path)?;
+    let remote = repo
+        .find_default_remote(gix::remote::Direction::Fetch)
+        .unwrap()?;
+    let url = &remote.url(gix::remote::Direction::Fetch).unwrap().path;
+    println!("{:?}", url);
+    Ok(())
 }
