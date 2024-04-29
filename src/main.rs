@@ -28,11 +28,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         (None, None, Some(_)) => {}
         _ => eprintln!("{}", USAGE),
     }
-    let repo = gix::open(args.path)?;
+    let mut path = std::fs::canonicalize(&args.path)?;
+    if path.is_file() {
+        path.pop();
+    }
+    let repo = gix::discover(&path)?;
     let remote = repo
         .find_default_remote(gix::remote::Direction::Fetch)
         .unwrap()?;
     let url = &remote.url(gix::remote::Direction::Fetch).unwrap().path;
+    let commit = repo.rev_parse_single("HEAD")?;
+    println!("{:?}", path);
     println!("{:?}", url);
+    println!("{:?}", commit);
     Ok(())
 }
