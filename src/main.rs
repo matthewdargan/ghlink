@@ -53,11 +53,29 @@ fn main() -> Result<(), Box<dyn Error>> {
     let remote = repo
         .find_default_remote(gix::remote::Direction::Fetch)
         .unwrap()?;
-    let url = &remote.url(gix::remote::Direction::Fetch).unwrap().path;
+    let git_path = &remote
+        .url(gix::remote::Direction::Fetch)
+        .unwrap()
+        .path
+        .strip_suffix(".git".as_bytes())
+        .unwrap();
+    let git_path_str = std::str::from_utf8(git_path)?;
     let commit = repo.rev_parse_single("HEAD")?;
-    println!("{:?}", cli);
-    println!("{:?}", path);
+    let prefix = repo.prefix()?;
+    let prefix_str = prefix.as_ref().unwrap();
+    let path_ref = cli.path.as_ref().unwrap();
+    let joined_path = prefix_str.join(path_ref);
+    let rel_path = joined_path.to_str().unwrap();
+    let mut url = format!(
+        "https://github.com/{}/blob/{}/{}",
+        git_path_str, commit, rel_path
+    );
+    if cli.l1.is_some() {
+        url.push_str(&format!("#L{}", cli.l1.unwrap()));
+    }
+    if cli.l2.is_some() {
+        url.push_str(&format!("-L{}", cli.l2.unwrap()));
+    }
     println!("{:?}", url);
-    println!("{:?}", commit);
     Ok(())
 }
