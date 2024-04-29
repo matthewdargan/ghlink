@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::io::BufRead;
 
 #[derive(Debug)]
 struct Cli {
@@ -33,8 +34,30 @@ fn parse_args() -> Option<Cli> {
     if cli.l1.is_none() && cli.l2.is_some() {
         return None;
     }
+    if cli.search.is_some() && (cli.l1.is_some() || cli.l2.is_some()) {
+        return None;
+    }
     cli.path.as_ref()?;
     Some(cli)
+}
+
+fn search_lines(path: &std::path::Path, text: &str) -> std::io::Result<Vec<usize>> {
+    // TODO: text.split('\n') and iterate each split text found in line
+    let file = std::fs::File::open(path)?;
+    let reader = std::io::BufReader::new(file);
+    let mut line_nums = Vec::new();
+    for (i, line) in reader.lines().enumerate() {
+        if line?.contains(text) {
+            line_nums.push(i + 1);
+        }
+    }
+    if line_nums.is_empty() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            format!("file {} does not contain string {}", path.display(), text),
+        ));
+    }
+    Ok(line_nums)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -45,11 +68,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             return Ok(());
         }
     };
-    let mut path = std::fs::canonicalize(cli.path.as_ref().unwrap())?;
-    if path.is_file() {
-        path.pop();
+    let path = cli.path.unwrap();
+    let mut abs_path = std::fs::canonicalize(&path)?;
+    if abs_path.is_file() {
+        abs_path.pop();
     }
-    let repo = gix::discover(&path)?;
+    let repo = gix::discover(&abs_path)?;
     let remote = repo
         .find_default_remote(gix::remote::Direction::Fetch)
         .unwrap()?;
@@ -62,10 +86,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let git_path_str = std::str::from_utf8(git_path)?;
     let commit = repo.rev_parse_single("HEAD")?;
     let prefix = repo.prefix()?;
-    let prefix_str = prefix.as_ref().unwrap();
-    let path_ref = cli.path.as_ref().unwrap();
-    let joined_path = prefix_str.join(path_ref);
-    let rel_path = joined_path.to_str().unwrap();
+    let joined = prefix.unwrap().join(&path);
+    let rel_path = joined.to_str().unwrap();
     let mut url = format!(
         "https://github.com/{}/blob/{}/{}",
         git_path_str, commit, rel_path
@@ -75,6 +97,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     if cli.l2.is_some() {
         url.push_str(&format!("-L{}", cli.l2.unwrap()));
+    }
+    if cli.search.is_some() {
+        let line_nums = search_lines(path.as_path(), &cli.search.unwrap());
+        println!("{:?}", line_nums);
     }
     println!("{:?}", url);
     Ok(())
