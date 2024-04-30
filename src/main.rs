@@ -107,6 +107,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             url.push_str(&format!("-L{}", line_nums.last().unwrap()));
         }
     }
-    println!("{:?}", url);
+    println!("{}", url);
     Ok(())
 }
