@@ -101,8 +101,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         url.push_str(&format!("-L{}", cli.l2.unwrap()));
     }
     if cli.search.is_some() {
-        let line_nums = search_lines(path.as_path(), &cli.search.unwrap());
-        println!("{:?}", line_nums);
+        let line_nums = search_lines(path.as_path(), &cli.search.unwrap())?;
+        url.push_str(&format!("#L{}", line_nums.first().unwrap()));
+        if line_nums.len() > 1 {
+            url.push_str(&format!("-L{}", line_nums.last().unwrap()));
+        }
     }
     println!("{:?}", url);
     Ok(())
