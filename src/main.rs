@@ -94,14 +94,17 @@ fn main() -> Result<(), Box<dyn Error>> {
         "https://github.com/{}/blob/{}/{}",
         git_path_str, commit, rel_path
     );
-    if cli.l1.is_some() {
-        url.push_str(&format!("#L{}", cli.l1.unwrap()));
+    if let Some(l1) = cli.l1 {
+        url.push_str(&format!("#L{}", l1));
     }
-    if cli.l2.is_some() {
-        url.push_str(&format!("-L{}", cli.l2.unwrap()));
+    if let Some(l2) = cli.l2 {
+        url.push_str(&format!("-L{}", l2));
     }
-    if cli.search.is_some() {
-        let line_nums = search_lines(path.as_path(), &cli.search.unwrap())?;
+    if let Some(mut search) = cli.search {
+        if search == "-" {
+            search = std::io::read_to_string(std::io::stdin())?;
+        }
+        let line_nums = search_lines(path.as_path(), &search)?;
         url.push_str(&format!("#L{}", line_nums.first().unwrap()));
         if line_nums.len() > 1 {
             url.push_str(&format!("-L{}", line_nums.last().unwrap()));
