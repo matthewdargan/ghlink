@@ -42,13 +42,15 @@ fn parse_args() -> Option<Cli> {
 }
 
 fn search_lines(path: &std::path::Path, text: &str) -> std::io::Result<Vec<usize>> {
-    // TODO: text.split('\n') and iterate each split text found in line
-    let file = std::fs::File::open(path)?;
-    let reader = std::io::BufReader::new(file);
+    let reader = std::io::BufReader::new(std::fs::File::open(path)?);
+    let mut text_lines = text.lines().peekable();
     let mut line_nums = Vec::new();
     for (i, line) in reader.lines().enumerate() {
-        if line?.contains(text) {
-            line_nums.push(i + 1);
+        if let Some(text_line) = text_lines.peek() {
+            if line?.contains(text_line) {
+                line_nums.push(i + 1);
+                text_lines.next();
+            }
         }
     }
     if line_nums.is_empty() {
