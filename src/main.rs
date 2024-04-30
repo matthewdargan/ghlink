@@ -9,7 +9,7 @@ struct Cli {
     path: Option<std::path::PathBuf>,
 }
 
-const USAGE: &str = "usage: ghlink [-l1 line1 [-l2 line2] | -s text] path";
+const USAGE: &str = "usage: ghlink [-l1 line1 [-l2 line2] | -s text] file";
 
 fn parse_args() -> Option<Cli> {
     let mut args = std::env::args().skip(1);
