@@ -1,7 +1,10 @@
 [package]
 name = "ghlink"
 version = "0.2.5"
+authors = ["Matthew Dargan <matthewdargan57@gmail.com>"]
 edition = "2021"
+description = "Create GitHub permanent links to specified file lines"
+license = "BSD-3-Clause"
 
 [dependencies]
 gix = "0.62.0"
