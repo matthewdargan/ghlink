@@ -17,8 +17,6 @@ struct Cli {
     path: Option<PathBuf>,
 }
 
-const USAGE: &str = "usage: ghlink [-l1 line1 [-l2 line2] | -s text] file";
-
 fn parse_args() -> Option<Cli> {
     let mut args = env::args().skip(1);
     let mut cli = Cli {
@@ -74,7 +72,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let cli = match parse_args() {
         Some(cli) => cli,
         None => {
-            eprintln!("{}", USAGE);
+            eprintln!("usage: ghlink [-l1 line1 [-l2 line2] | -s text] file");
             return Ok(());
         }
     };
