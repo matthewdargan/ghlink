@@ -37,14 +37,13 @@ fn parse_args() -> Option<Cli> {
             _ => cli.path = Some(PathBuf::from(arg)),
         }
     }
-    if cli.l1.is_none() && cli.l2.is_some() {
-        return None;
+    match (cli.l1.is_some(), cli.l2.is_some(), cli.search.is_some()) {
+        (false, true, _) | (true, _, true) => None,
+        _ => {
+            cli.path.as_ref()?;
+            Some(cli)
+        }
     }
-    if cli.search.is_some() && (cli.l1.is_some() || cli.l2.is_some()) {
-        return None;
-    }
-    cli.path.as_ref()?;
-    Some(cli)
 }
 
 fn search_lines(path: &Path, text: &str) -> io::Result<Vec<usize>> {
