@@ -7,6 +7,7 @@ use std::error::Error;
 use std::fs::{self, File};
 use std::io::{self, BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use std::process;
 use std::str;
 
 #[derive(Debug)]
@@ -72,7 +73,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Some(cli) => cli,
         None => {
             eprintln!("usage: ghlink [-l1 line1 [-l2 line2] | -s text] file");
-            return Ok(());
+            process::exit(1);
         }
     };
     let path = cli.path.unwrap();
