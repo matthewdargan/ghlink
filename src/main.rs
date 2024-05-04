@@ -12,39 +12,56 @@ use std::str;
 
 #[derive(Debug)]
 struct Cli {
-    l1: Option<usize>,
-    l2: Option<usize>,
-    search: Option<String>,
-    path: Option<PathBuf>,
+    link_opts: LinkOptions,
+    path: PathBuf,
 }
 
-fn parse_args() -> Option<Cli> {
+#[derive(Debug)]
+enum LinkOptions {
+    Lines(usize, Option<usize>),
+    Search(String),
+    Empty,
+}
+
+const USAGE: &str = "usage: ghlink [-l1 line1 [-l2 line2] | -s text] file";
+
+fn parse_args() -> Result<Cli, Box<dyn Error>> {
     let mut args = env::args().skip(1);
-    let mut cli = Cli {
-        l1: None,
-        l2: None,
-        search: None,
-        path: None,
-    };
+    let mut l1 = None;
+    let mut l2 = None;
+    let mut search = None;
+    let mut path = None;
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "-l1" => {
-                cli.l1 = Some(args.next()?.parse::<usize>().ok()?);
+                l1 = Some(
+                    args.next()
+                        .ok_or(io::Error::new(io::ErrorKind::InvalidInput, USAGE))?
+                        .parse::<usize>()?,
+                );
             }
             "-l2" => {
-                cli.l2 = Some(args.next()?.parse::<usize>().ok()?);
+                l2 = Some(
+                    args.next()
+                        .ok_or(io::Error::new(io::ErrorKind::InvalidInput, USAGE))?
+                        .parse::<usize>()?,
+                );
             }
-            "-s" => cli.search = args.next(),
-            _ => cli.path = Some(PathBuf::from(arg)),
+            "-s" => search = args.next(),
+            _ => path = Some(PathBuf::from(arg)),
         }
     }
-    match (cli.l1.is_some(), cli.l2.is_some(), cli.search.is_some()) {
-        (false, true, _) | (true, _, true) => None,
-        _ => {
-            cli.path.as_ref()?;
-            Some(cli)
-        }
-    }
+    let link_opts = match (l1, l2, search) {
+        (Some(l1), _, None) => LinkOptions::Lines(l1, l2),
+        (None, None, Some(search)) => LinkOptions::Search(search),
+        (None, None, None) => LinkOptions::Empty,
+        _ => return Err(Box::new(io::Error::new(io::ErrorKind::InvalidInput, USAGE))),
+    };
+    let path = match path {
+        Some(path) => path,
+        None => return Err(Box::new(io::Error::new(io::ErrorKind::InvalidInput, USAGE))),
+    };
+    Ok(Cli { link_opts, path })
 }
 
 fn search_lines(path: &Path, text: &str) -> io::Result<Vec<usize>> {
@@ -70,14 +87,13 @@ fn search_lines(path: &Path, text: &str) -> io::Result<Vec<usize>> {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let cli = match parse_args() {
-        Some(cli) => cli,
-        None => {
-            eprintln!("usage: ghlink [-l1 line1 [-l2 line2] | -s text] file");
+        Ok(cli) => cli,
+        Err(e) => {
+            eprintln!("{e}");
             process::exit(1);
         }
     };
-    let path = cli.path.unwrap();
-    let mut abs_path = fs::canonicalize(&path)?;
+    let mut abs_path = fs::canonicalize(&cli.path)?;
     if abs_path.is_file() {
         abs_path.pop();
     }
@@ -89,32 +105,35 @@ fn main() -> Result<(), Box<dyn Error>> {
         .url(gix::remote::Direction::Fetch)
         .unwrap()
         .path
-        .strip_suffix(".git".as_bytes())
+        .strip_suffix(b".git")
         .unwrap();
     let git_path_str = str::from_utf8(git_path)?;
     let commit = repo.rev_parse_single("HEAD")?;
     let prefix = repo.prefix()?;
-    let joined = prefix.unwrap().join(&path);
+    let joined = prefix.unwrap().join(&cli.path);
     let rel_path = joined.to_str().unwrap();
     let mut url = format!(
         "https://github.com/{}/blob/{}/{}",
         git_path_str, commit, rel_path
     );
-    if let Some(l1) = cli.l1 {
-        url.push_str(&format!("#L{}", l1));
-    }
-    if let Some(l2) = cli.l2 {
-        url.push_str(&format!("-L{}", l2));
-    }
-    if let Some(mut search) = cli.search {
-        if search == "-" {
-            search = io::read_to_string(io::stdin())?;
+    match cli.link_opts {
+        LinkOptions::Lines(l1, l2) => {
+            url.push_str(&format!("#L{}", l1));
+            if let Some(l2) = l2 {
+                url.push_str(&format!("-L{}", l2));
+            }
         }
-        let line_nums = search_lines(path.as_path(), &search)?;
-        url.push_str(&format!("#L{}", line_nums.first().unwrap()));
-        if line_nums.len() > 1 {
-            url.push_str(&format!("-L{}", line_nums.last().unwrap()));
+        LinkOptions::Search(mut search) => {
+            if search == "-" {
+                search = io::read_to_string(io::stdin())?;
+            }
+            let line_nums = search_lines(cli.path.as_path(), &search)?;
+            url.push_str(&format!("#L{}", line_nums.first().unwrap()));
+            if line_nums.len() > 1 {
+                url.push_str(&format!("-L{}", line_nums.last().unwrap()));
+            }
         }
+        LinkOptions::Empty => {}
     }
     println!("{}", url);
     Ok(())
