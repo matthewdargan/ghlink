@@ -26,6 +26,7 @@
       in {
         devShells.default = pkgs.mkShell {
           packages = [pkgs.bacon pkgs.cargo pkgs.clippy];
+          RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
           shellHook = "${config.pre-commit.installationScript}";
         };
         packages.ghlink = craneLib.buildPackage {
