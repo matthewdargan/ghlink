@@ -25,7 +25,7 @@ enum LinkOptions {
 
 const USAGE: &str = "usage: ghlink [-l1 line1 [-l2 line2] | -s text] file";
 
-fn parse_args() -> Result<Cli, Box<dyn Error>> {
+fn parse_args() -> Result<Cli, io::Error> {
     let mut args = env::args().skip(1);
     let mut l1 = None;
     let mut l2 = None;
@@ -37,14 +37,16 @@ fn parse_args() -> Result<Cli, Box<dyn Error>> {
                 l1 = Some(
                     args.next()
                         .ok_or(io::Error::new(io::ErrorKind::InvalidInput, USAGE))?
-                        .parse::<usize>()?,
+                        .parse::<usize>()
+                        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, USAGE))?,
                 );
             }
             "-l2" => {
                 l2 = Some(
                     args.next()
                         .ok_or(io::Error::new(io::ErrorKind::InvalidInput, USAGE))?
-                        .parse::<usize>()?,
+                        .parse::<usize>()
+                        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, USAGE))?,
                 );
             }
             "-s" => search = args.next(),
@@ -55,11 +57,11 @@ fn parse_args() -> Result<Cli, Box<dyn Error>> {
         (Some(l1), _, None) => LinkOptions::Lines(l1, l2),
         (None, None, Some(search)) => LinkOptions::Search(search),
         (None, None, None) => LinkOptions::Empty,
-        _ => return Err(Box::new(io::Error::new(io::ErrorKind::InvalidInput, USAGE))),
+        _ => return Err(io::Error::new(io::ErrorKind::InvalidInput, USAGE)),
     };
     let path = match path {
         Some(path) => path,
-        None => return Err(Box::new(io::Error::new(io::ErrorKind::InvalidInput, USAGE))),
+        None => return Err(io::Error::new(io::ErrorKind::InvalidInput, USAGE)),
     };
     Ok(Cli { link_opts, path })
 }
