@@ -69,15 +69,19 @@ fn parse_args() -> Result<Cli, io::Error> {
 fn search_lines(path: &Path, text: &str) -> io::Result<Vec<usize>> {
     let reader = BufReader::new(File::open(path)?);
     let mut text_lines = text.lines().peekable();
-    let mut line_nums = Vec::new();
-    for (i, line) in reader.lines().enumerate() {
-        if let Some(text_line) = text_lines.peek() {
-            if line?.contains(text_line) {
-                line_nums.push(i + 1);
-                text_lines.next();
+    let line_nums: Vec<_> = reader
+        .lines()
+        .enumerate()
+        .filter_map(|(i, line)| {
+            if let Some(text_line) = text_lines.peek() {
+                if line.ok()?.contains(text_line) {
+                    text_lines.next();
+                    return Some(i + 1);
+                }
             }
-        }
-    }
+            None
+        })
+        .collect();
     if line_nums.is_empty() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
