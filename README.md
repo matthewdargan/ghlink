@@ -17,8 +17,6 @@ in file.
 `ghlink -s text file` prints a link to lines matching text in file. If text
 is ‘-’, the standard input is used.
 
-The `git` program must be on the system's PATH environment variable.
-
 ## Examples
 
 Print a link to README.md:
