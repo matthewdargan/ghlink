@@ -4,6 +4,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:ipetkov/crane";
     };
+    fenix = {
+      inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:nix-community/fenix";
+    };
     nixpkgs.url = "nixpkgs/nixos-unstable";
     parts.url = "github:hercules-ci/flake-parts";
     pre-commit-hooks = {
@@ -22,11 +26,12 @@
         system,
         ...
       }: let
-        craneLib = inputs.crane.lib.${system};
+        craneLib = inputs.crane.lib.${system}.overrideToolchain rustToolchain;
+        rustToolchain = inputs'.fenix.packages.stable.toolchain;
       in {
         devShells.default = pkgs.mkShell {
-          packages = [pkgs.bacon pkgs.cargo pkgs.clippy];
-          RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
+          packages = [pkgs.bacon rustToolchain];
+          RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/src";
           shellHook = "${config.pre-commit.installationScript}";
         };
         packages.ghlink = craneLib.buildPackage {
@@ -34,7 +39,12 @@
         };
         pre-commit = {
           settings = {
-            hooks.rustfmt.enable = true;
+            hooks = {
+              alejandra.enable = true;
+              deadnix.enable = true;
+              rustfmt.enable = true;
+              statix.enable = true;
+            };
             src = ./.;
           };
         };
