@@ -35,6 +35,7 @@
           shellHook = "${config.pre-commit.installationScript}";
         };
         packages.ghlink = craneLib.buildPackage {
+          nativeBuildInputs = lib.optionals pkgs.stdenv.isDarwin [pkgs.libiconv];
           src = craneLib.cleanCargoSource (craneLib.path ./.);
         };
         pre-commit = {
