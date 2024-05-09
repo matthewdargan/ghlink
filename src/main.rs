@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+#![warn(clippy::all, clippy::nursery, clippy::pedantic)]
 use std::env;
 use std::error::Error;
 use std::fs::{self, File};
@@ -36,7 +37,7 @@ fn parse_args() -> Result<Cli, io::Error> {
             "-l1" => {
                 l1 = Some(
                     args.next()
-                        .ok_or(io::Error::new(io::ErrorKind::InvalidInput, USAGE))?
+                        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, USAGE))?
                         .parse::<usize>()
                         .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, USAGE))?,
                 );
@@ -44,7 +45,7 @@ fn parse_args() -> Result<Cli, io::Error> {
             "-l2" => {
                 l2 = Some(
                     args.next()
-                        .ok_or(io::Error::new(io::ErrorKind::InvalidInput, USAGE))?
+                        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, USAGE))?
                         .parse::<usize>()
                         .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, USAGE))?,
                 );
@@ -59,9 +60,8 @@ fn parse_args() -> Result<Cli, io::Error> {
         (None, None, None) => LinkOptions::Empty,
         _ => return Err(io::Error::new(io::ErrorKind::InvalidInput, USAGE)),
     };
-    let path = match path {
-        Some(path) => path,
-        None => return Err(io::Error::new(io::ErrorKind::InvalidInput, USAGE)),
+    let Some(path) = path else {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, USAGE));
     };
     Ok(Cli { link_opts, path })
 }
