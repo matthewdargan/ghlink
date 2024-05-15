@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 #![warn(clippy::pedantic)]
+use ghlink::gix_remote_url;
 use std::env;
 use std::error::Error;
 use std::fs::{self, File};
@@ -108,13 +109,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let remote = repo
             .find_default_remote(gix::remote::Direction::Fetch)
             .unwrap()?;
-        let git_path = &remote
-            .url(gix::remote::Direction::Fetch)
-            .unwrap()
-            .path
-            .strip_suffix(b".git")
-            .unwrap();
-        let git_path_str = str::from_utf8(git_path)?;
+        let git_path_str = gix_remote_url(&remote)?.unwrap();
         let commit = repo.rev_parse_single("HEAD")?;
         let prefix = repo.prefix()?;
         let joined = prefix.unwrap().join(&cli.path);
