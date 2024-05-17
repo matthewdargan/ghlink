@@ -8,6 +8,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:nix-community/fenix";
     };
+    nix-filter.url = "github:numtide/nix-filter";
     nixpkgs.url = "nixpkgs/nixos-unstable";
     parts.url = "github:hercules-ci/flake-parts";
     pre-commit-hooks = {
@@ -36,7 +37,14 @@
         };
         packages.ghlink = craneLib.buildPackage {
           nativeBuildInputs = lib.optionals pkgs.stdenv.isDarwin [pkgs.libiconv];
-          src = ./.;
+          src = inputs.nix-filter.lib {
+            include = [
+              "Cargo.lock"
+              "Cargo.toml"
+              "src"
+            ];
+            root = ./.;
+          };
         };
         pre-commit = {
           settings = {
