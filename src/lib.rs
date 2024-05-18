@@ -9,21 +9,6 @@ use std::str::{self, Utf8Error};
 /// # Errors
 ///
 /// This function will return an error if the URL is not valid UTF-8.
-///
-/// # Examples
-///
-/// ```no_run
-/// use ghlink::gix_remote_url;
-///
-/// fn main() -> Result<(), Box<dyn std::error::Error>> {
-///     let repo = gix::open(".")?;
-///     let remote = repo
-///         .find_default_remote(gix::remote::Direction::Fetch)
-///         .unwrap()?;
-///     let url = gix_remote_url(&remote)?.unwrap();
-///     Ok(())
-/// }
-/// ```
 pub fn gix_remote_url(remote: &gix::Remote) -> Result<Option<String>, Utf8Error> {
     let git_path = match remote.url(gix::remote::Direction::Fetch) {
         Some(url) => match url.path.strip_suffix(b".git") {
