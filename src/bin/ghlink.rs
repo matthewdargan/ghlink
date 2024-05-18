@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#![warn(clippy::pedantic)]
 use ghlink::gix_remote_url;
 use std::env;
 use std::error::Error;

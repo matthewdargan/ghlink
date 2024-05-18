@@ -12,6 +12,5 @@ categories = ["command-line-utilities", "development-tools"]
 [dependencies]
 gix = "0.62.0"
 
-[[bin]]
-path = "src/main.rs"
-name = "ghlink"
+[lints.clippy.pedantic]
+level = "warn"
