@@ -1,5 +1,9 @@
 # Ghlink
 
+[![Crates.io](https://img.shields.io/crates/v/ghlink.svg)](https://crates.io/crates/ghlink)
+[![Documentation](https://docs.rs/ghlink/badge.svg)](https://docs.rs/ghlink)
+[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
+
 Ghlink creates GitHub permanent links to specified file lines of files hosted
 in a GitHub repository.
 
