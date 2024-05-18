@@ -12,14 +12,17 @@ use std::str::{self, Utf8Error};
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use ghlink::gix_remote_url;
 ///
-/// let repo = gix::open(".")?;
-/// let remote = repo
-///     .find_default_remote(gix::remote::Direction::Fetch)
-///     .unwrap()?;
-/// let git_path_str = gix_remote_url(&remote)?.unwrap();
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let repo = gix::open(".")?;
+///     let remote = repo
+///         .find_default_remote(gix::remote::Direction::Fetch)
+///         .unwrap()?;
+///     let url = gix_remote_url(&remote)?.unwrap();
+///     Ok(())
+/// }
 /// ```
 pub fn gix_remote_url(remote: &gix::Remote) -> Result<Option<String>, Utf8Error> {
     let git_path = match remote.url(gix::remote::Direction::Fetch) {
