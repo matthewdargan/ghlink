@@ -36,12 +36,13 @@
           shellHook = "${config.pre-commit.installationScript}";
         };
         packages.ghlink = craneLib.buildPackage {
-          nativeBuildInputs = lib.optionals pkgs.stdenv.isDarwin [pkgs.libiconv];
+          nativeBuildInputs = [pkgs.git] ++ lib.optionals pkgs.stdenv.isDarwin [pkgs.libiconv];
           src = inputs.nix-filter.lib {
             include = [
               "Cargo.lock"
               "Cargo.toml"
               "src"
+              "tests"
             ];
             root = ./.;
           };
