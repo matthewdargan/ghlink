@@ -66,7 +66,54 @@ pub fn search_lines(path: &Path, text: &str) -> io::Result<Vec<usize>> {
 mod tests {
     use super::*;
     use std::io::Write;
-    use tempfile::NamedTempFile;
+    use tempfile::{tempdir, NamedTempFile};
+
+    #[test]
+    fn test_gix_repo_url() {
+        let path = gix_testtools::scripted_fixture_read_only("create-repo").unwrap();
+        let repo = gix::open(path).unwrap();
+        assert_eq!(
+            gix_repo_url(&repo, gix::remote::Direction::Fetch).unwrap(),
+            Some((
+                "github.test.com".to_string(),
+                "matthewdargan/repo".to_string()
+            ))
+        );
+    }
+
+    #[test]
+    fn test_gix_repo_url_no_git() {
+        let path = gix_testtools::scripted_fixture_read_only("create-repo-no-git").unwrap();
+        let repo = gix::open(path).unwrap();
+        assert_eq!(
+            gix_repo_url(&repo, gix::remote::Direction::Fetch).unwrap(),
+            Some(("github.com".to_string(), "repo".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_gix_repo_url_no_remote() {
+        let path = tempdir().unwrap().into_path().join("repo");
+        let repo = gix::init(path).unwrap();
+        assert_eq!(
+            gix_repo_url(&repo, gix::remote::Direction::Fetch).unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn test_gix_repo_url_invalid_host() {
+        let path = gix_testtools::scripted_fixture_read_only("create-repo-invalid-host").unwrap();
+        let repo = gix::open(path).unwrap();
+        assert!(gix_repo_url(&repo, gix::remote::Direction::Fetch).is_err());
+    }
+
+    #[test]
+    fn test_gix_repo_url_invalid_path() {
+        let path = gix_testtools::scripted_fixture_read_only("create-repo-invalid-path").unwrap();
+        let repo = gix::open(path).unwrap();
+        assert!(gix_repo_url(&repo, gix::remote::Direction::Fetch).is_err());
+    }
 
     #[test]
     fn test_search_lines() {
