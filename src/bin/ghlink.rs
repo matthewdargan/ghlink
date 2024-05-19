@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-use ghlink::{gix_remote_url, search_lines};
+use ghlink::{gix_repo_url, search_lines};
 use std::env;
 use std::error::Error;
 use std::fs::{self};
@@ -80,15 +80,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             abs_path.pop();
         }
         let repo = gix::discover(&abs_path)?;
-        let remote = repo
-            .find_default_remote(gix::remote::Direction::Fetch)
-            .unwrap()?;
-        let git_path_str = gix_remote_url(&remote)?.unwrap();
+        let (host, path) = gix_repo_url(&repo, gix::remote::Direction::Fetch)?.unwrap();
         let commit = repo.rev_parse_single("HEAD")?;
         let prefix = repo.prefix()?;
         let joined = prefix.unwrap().join(&cli.path);
         let rel_path = joined.to_str().unwrap();
-        format!("https://github.com/{git_path_str}/blob/{commit}/{rel_path}")
+        format!("https://{host}/{path}/blob/{commit}/{rel_path}")
     };
     match cli.link_opts {
         LinkOptions::Lines(l1, l2) => {
