@@ -82,10 +82,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let repo = gix::discover(&abs_path)?;
         let (host, path) = gix_repo_url(&repo, gix::remote::Direction::Fetch)?.unwrap();
         let commit = repo.rev_parse_single("HEAD")?;
-        let prefix = repo.prefix()?;
-        let joined = prefix.unwrap().join(&cli.path);
-        let rel_path = joined.to_str().unwrap();
-        format!("https://{host}/{path}/blob/{commit}/{rel_path}")
+        let rel_path = repo.prefix()?.unwrap().join(&cli.path);
+        format!("https://{host}/{path}/blob/{commit}/{}", rel_path.display())
     };
     match cli.link_opts {
         LinkOptions::Lines(l1, l2) => {
