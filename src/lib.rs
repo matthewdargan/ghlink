@@ -61,3 +61,41 @@ pub fn search_lines(path: &Path, text: &str) -> io::Result<Vec<usize>> {
     }
     Ok(line_nums)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn test_search_lines() {
+        let mut file = NamedTempFile::new().unwrap();
+        file.write_all(b"foo\nbar\nbaz\nbar").unwrap();
+        assert_eq!(search_lines(file.path(), "bar").unwrap(), vec![2]);
+    }
+
+    #[test]
+    fn test_search_lines_continuous() {
+        let mut file = NamedTempFile::new().unwrap();
+        file.write_all(b"foo1\nfoo2\nfoo3\nfoo4\nfoo5\nfoo6")
+            .unwrap();
+        assert_eq!(
+            search_lines(file.path(), "foo2\nfoo3\nfoo4\nfoo5").unwrap(),
+            vec![2, 3, 4, 5]
+        );
+    }
+
+    #[test]
+    fn test_search_lines_no_file() {
+        let file = NamedTempFile::new().unwrap();
+        assert!(search_lines(file.path(), "").is_err());
+    }
+
+    #[test]
+    fn test_search_lines_not_found() {
+        let mut file = NamedTempFile::new().unwrap();
+        file.write_all(b"foo\nbar\nbaz\nbar").unwrap();
+        assert!(search_lines(file.path(), "not found").is_err());
+    }
+}

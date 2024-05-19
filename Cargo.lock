@@ -284,6 +284,7 @@ name = "ghlink"
 version = "0.2.16"
 dependencies = [
  "gix",
+ "tempfile",
 ]
 
 [[package]]
