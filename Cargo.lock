@@ -326,7 +326,7 @@ dependencies = [
 
 [[package]]
 name = "ghlink"
-version = "0.2.16"
+version = "0.2.17"
 dependencies = [
  "gix",
  "gix-testtools",
