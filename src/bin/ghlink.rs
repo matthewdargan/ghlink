@@ -2,31 +2,17 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-use ghlink::{gix_repo_url, search_lines};
+use ghlink::{blob_url, LinkOptions, UrlGenerationArgs};
 use std::env;
 use std::error::Error;
-use std::fs::{self};
-use std::io::{self};
+use std::io;
 use std::path::PathBuf;
 use std::process;
 use std::str;
 
-#[derive(Debug)]
-struct Cli {
-    link_opts: LinkOptions,
-    path: PathBuf,
-}
-
-#[derive(Debug)]
-enum LinkOptions {
-    Lines(usize, Option<usize>),
-    Search(String),
-    Empty,
-}
-
 const USAGE: &str = "usage: ghlink [-l1 line1 [-l2 line2] | -s text] file";
 
-fn parse_args() -> Result<Cli, io::Error> {
+fn parse_args() -> Result<UrlGenerationArgs, io::Error> {
     let mut args = env::args().skip(1);
     let mut l1 = None;
     let mut l2 = None;
@@ -63,7 +49,7 @@ fn parse_args() -> Result<Cli, io::Error> {
     let Some(path) = path else {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, USAGE));
     };
-    Ok(Cli { link_opts, path })
+    Ok(UrlGenerationArgs { link_opts, path })
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -74,36 +60,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             process::exit(1);
         }
     };
-    let mut url = {
-        let mut abs_path = fs::canonicalize(&cli.path)?;
-        if abs_path.is_file() {
-            abs_path.pop();
-        }
-        let repo = gix::discover(&abs_path)?;
-        let (host, path) = gix_repo_url(&repo, gix::remote::Direction::Fetch)?.unwrap();
-        let commit = repo.rev_parse_single("HEAD")?;
-        let rel_path = repo.prefix()?.unwrap().join(&cli.path);
-        format!("https://{host}/{path}/blob/{commit}/{}", rel_path.display())
-    };
-    match cli.link_opts {
-        LinkOptions::Lines(l1, l2) => {
-            url.push_str(&format!("#L{l1}"));
-            if let Some(l2) = l2 {
-                url.push_str(&format!("-L{l2}"));
-            }
-        }
-        LinkOptions::Search(mut search) => {
-            if search == "-" {
-                search = io::read_to_string(io::stdin())?;
-            }
-            let line_nums = search_lines(cli.path.as_path(), &search)?;
-            url.push_str(&format!("#L{}", line_nums.first().unwrap()));
-            if line_nums.len() > 1 {
-                url.push_str(&format!("-L{}", line_nums.last().unwrap()));
-            }
-        }
-        LinkOptions::Empty => {}
-    }
-    println!("{url}");
+    println!("{}", blob_url(&cli)?);
     Ok(())
 }

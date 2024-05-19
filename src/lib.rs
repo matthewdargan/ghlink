@@ -3,12 +3,78 @@
 // license that can be found in the LICENSE file.
 
 use std::error::Error;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{self, BufRead, BufReader};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::str;
 
-/// Returns the URL of the repository.
+#[derive(Debug)]
+pub struct UrlGenerationArgs {
+    pub link_opts: LinkOptions,
+    pub path: PathBuf,
+}
+
+#[derive(Debug)]
+pub enum LinkOptions {
+    Lines(usize, Option<usize>),
+    Search(String),
+    Empty,
+}
+
+/// Returns the GitHub blob URL for the file at `path` with the given
+/// `link_opts`.
+///
+/// # Errors
+///
+/// This function will return an error if the repository cannot be found or
+/// if the file cannot be read.
+pub fn blob_url(cli: &UrlGenerationArgs) -> Result<String, Box<dyn Error>> {
+    let mut url = {
+        let mut abs_path = fs::canonicalize(&cli.path)?;
+        if abs_path.is_file() {
+            abs_path.pop();
+        }
+        let repo = gix::discover(&abs_path)?;
+        let (host, path) =
+            gix_repo_url(&repo, gix::remote::Direction::Fetch)?.ok_or("failed to get repo URL")?;
+        let commit = repo.rev_parse_single("HEAD")?;
+        let rel_path = repo
+            .prefix()?
+            .ok_or("failed to get repo relative path")?
+            .join(&cli.path);
+        format!("https://{host}/{path}/blob/{commit}/{}", rel_path.display())
+    };
+    match &cli.link_opts {
+        LinkOptions::Lines(l1, l2) => {
+            url.push_str(&format!("#L{l1}"));
+            if let Some(l2) = l2 {
+                url.push_str(&format!("-L{l2}"));
+            }
+        }
+        LinkOptions::Search(search) => {
+            let search = if search == "-" {
+                io::read_to_string(io::stdin())?
+            } else {
+                search.clone()
+            };
+            let line_nums = search_lines(cli.path.as_path(), &search)?;
+            url.push_str(&format!(
+                "#L{}",
+                line_nums.first().ok_or("no line numbers found")?
+            ));
+            if line_nums.len() > 1 {
+                url.push_str(&format!(
+                    "-L{}",
+                    line_nums.last().ok_or("no line numbers found")?
+                ));
+            }
+        }
+        LinkOptions::Empty => {}
+    }
+    Ok(url)
+}
+
+/// Returns the repository URL.
 ///
 /// # Errors
 ///
