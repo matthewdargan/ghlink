@@ -131,10 +131,130 @@ pub fn search_lines(path: &Path, text: &str) -> io::Result<Vec<usize>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
     use std::io::Write;
     use tempfile::{tempdir, NamedTempFile};
 
     #[test]
+    #[serial]
+    fn test_blob_url_empty() {
+        let path = gix_testtools::scripted_fixture_read_only("create-readme-repo").unwrap();
+        let _keep = gix_testtools::set_current_dir(path);
+        let args = UrlGenerationArgs {
+            link_opts: LinkOptions::Empty,
+            path: "README.md".into(),
+        };
+        let re = regex::Regex::new(
+            r"https://github\.test\.com/matthewdargan/repo/blob/[0-9a-f]{40}/README\.md",
+        )
+        .unwrap();
+        assert!(re.is_match(blob_url(&args).unwrap().as_str()));
+    }
+
+    #[test]
+    #[serial]
+    fn test_blob_url_l1() {
+        let path = gix_testtools::scripted_fixture_read_only("create-readme-repo").unwrap();
+        let _keep = gix_testtools::set_current_dir(path);
+        let args = UrlGenerationArgs {
+            link_opts: LinkOptions::Lines(1, None),
+            path: "README.md".into(),
+        };
+        let re = regex::Regex::new(
+            r"https://github\.test\.com/matthewdargan/repo/blob/[0-9a-f]{40}/README\.md#L1",
+        )
+        .unwrap();
+        assert!(re.is_match(blob_url(&args).unwrap().as_str()));
+    }
+
+    #[test]
+    #[serial]
+    fn test_blob_url_l1_l2() {
+        let path = gix_testtools::scripted_fixture_read_only("create-readme-repo").unwrap();
+        let _keep = gix_testtools::set_current_dir(path);
+        let args = UrlGenerationArgs {
+            link_opts: LinkOptions::Lines(3, Some(8)),
+            path: "README.md".into(),
+        };
+        let re = regex::Regex::new(
+            r"https://github\.test\.com/matthewdargan/repo/blob/[0-9a-f]{40}/README\.md#L3-L8",
+        )
+        .unwrap();
+        assert!(re.is_match(blob_url(&args).unwrap().as_str()));
+    }
+
+    #[test]
+    #[serial]
+    fn test_blob_url_s() {
+        let path = gix_testtools::scripted_fixture_read_only("create-readme-repo").unwrap();
+        let _keep = gix_testtools::set_current_dir(path);
+        let args = UrlGenerationArgs {
+            link_opts: LinkOptions::Search("foo1".into()),
+            path: "README.md".into(),
+        };
+        let re = regex::Regex::new(
+            r"https://github\.test\.com/matthewdargan/repo/blob/[0-9a-f]{40}/README\.md#L1",
+        )
+        .unwrap();
+        assert!(re.is_match(blob_url(&args).unwrap().as_str()));
+    }
+
+    #[test]
+    #[serial]
+    fn test_blob_url_s_continuous() {
+        let path = gix_testtools::scripted_fixture_read_only("create-readme-repo").unwrap();
+        let _keep = gix_testtools::set_current_dir(path);
+        let args = UrlGenerationArgs {
+            link_opts: LinkOptions::Search("foo1\nfoo2\nfoo3".into()),
+            path: "README.md".into(),
+        };
+        let re = regex::Regex::new(
+            r"https://github\.test\.com/matthewdargan/repo/blob/[0-9a-f]{40}/README\.md#L1-L3",
+        )
+        .unwrap();
+        assert!(re.is_match(blob_url(&args).unwrap().as_str()));
+    }
+
+    #[test]
+    #[serial]
+    fn test_blob_url_s_not_found() {
+        let path = gix_testtools::scripted_fixture_read_only("create-readme-repo").unwrap();
+        let _keep = gix_testtools::set_current_dir(path);
+        let args = UrlGenerationArgs {
+            link_opts: LinkOptions::Search("bar".into()),
+            path: "README.md".into(),
+        };
+        assert!(blob_url(&args).is_err());
+    }
+
+    #[test]
+    #[serial]
+    fn test_blob_url_no_url() {
+        let path =
+            gix_testtools::scripted_fixture_read_only("create-readme-repo-no-remote").unwrap();
+        let _keep = gix_testtools::set_current_dir(path);
+        let args = UrlGenerationArgs {
+            link_opts: LinkOptions::Empty,
+            path: "README.md".into(),
+        };
+        let err = blob_url(&args).unwrap_err().to_string();
+        assert_eq!(err, "failed to get repo URL");
+    }
+
+    #[test]
+    #[serial]
+    fn test_blob_url_cwd_mismatch() {
+        let path = gix_testtools::scripted_fixture_read_only("create-readme-repo").unwrap();
+        let args = UrlGenerationArgs {
+            link_opts: LinkOptions::Empty,
+            path: path.join("README.md"),
+        };
+        let err = blob_url(&args).unwrap_err().to_string();
+        assert_eq!(err, "failed to get repo relative path");
+    }
+
+    #[test]
+    #[serial]
     fn test_gix_repo_url() {
         let path = gix_testtools::scripted_fixture_read_only("create-repo").unwrap();
         let repo = gix::open(path).unwrap();
@@ -148,6 +268,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_gix_repo_url_no_git() {
         let path = gix_testtools::scripted_fixture_read_only("create-repo-no-git").unwrap();
         let repo = gix::open(path).unwrap();
@@ -158,6 +279,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_gix_repo_url_no_remote() {
         let path = tempdir().unwrap().into_path().join("repo");
         let repo = gix::init(path).unwrap();
@@ -168,6 +290,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_gix_repo_url_invalid_host() {
         let path = gix_testtools::scripted_fixture_read_only("create-repo-invalid-host").unwrap();
         let repo = gix::open(path).unwrap();
@@ -175,6 +298,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_gix_repo_url_invalid_path() {
         let path = gix_testtools::scripted_fixture_read_only("create-repo-invalid-path").unwrap();
         let repo = gix::open(path).unwrap();
@@ -182,6 +306,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_lines() {
         let mut file = NamedTempFile::new().unwrap();
         file.write_all(b"foo\nbar\nbaz\nbar").unwrap();
@@ -189,6 +314,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_lines_continuous() {
         let mut file = NamedTempFile::new().unwrap();
         file.write_all(b"foo1\nfoo2\nfoo3\nfoo4\nfoo5\nfoo6")
@@ -200,12 +326,14 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_lines_no_file() {
         let file = NamedTempFile::new().unwrap();
         assert!(search_lines(file.path(), "").is_err());
     }
 
     #[test]
+    #[serial]
     fn test_search_lines_not_found() {
         let mut file = NamedTempFile::new().unwrap();
         file.write_all(b"foo\nbar\nbaz\nbar").unwrap();

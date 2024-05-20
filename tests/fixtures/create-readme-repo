@@ -1,0 +1,8 @@
+#!/bin/bash
+git init
+git remote add origin git@github.test.com:matthewdargan/repo.git
+echo 'foo1' > README.md
+echo 'foo2' >> README.md
+echo 'foo3' >> README.md
+git add README.md
+git commit -m 'chore: initial commit'
