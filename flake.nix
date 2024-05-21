@@ -24,10 +24,9 @@
         inputs',
         lib,
         pkgs,
-        system,
         ...
       }: let
-        craneLib = inputs.crane.lib.${system}.overrideToolchain rustToolchain;
+        craneLib = (inputs.crane.mkLib pkgs).overrideToolchain rustToolchain;
         rustToolchain = inputs'.fenix.packages.stable.toolchain;
       in {
         devShells.default = pkgs.mkShell {
