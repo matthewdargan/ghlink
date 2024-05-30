@@ -1,6 +1,6 @@
 [package]
 name = "ghlink"
-version = "0.2.19"
+version = "0.2.20"
 authors = ["Matthew Dargan <matthewdargan57@gmail.com>"]
 edition = "2021"
 description = "Create GitHub permanent links to specified file lines"
@@ -10,7 +10,7 @@ keywords = ["git", "github"]
 categories = ["command-line-utilities", "development-tools"]
 
 [dependencies]
-gix = "0.62.0"
+gix = "0.63.0"
 
 [dev-dependencies]
 gix-testtools = "0.13.0"
